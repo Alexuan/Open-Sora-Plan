@@ -701,7 +701,6 @@ class CausalVAEModel(VideoBaseAE_PL):
         self.load_state_dict(sd, strict=False)
         
     def validation_step(self, batch, batch_idx):
-        
         from ..utils.video_utils import tensor_to_video
         inputs = self.get_input(batch, 'video')
         latents = self.encode(inputs).sample()

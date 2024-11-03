@@ -1,3 +1,4 @@
+import os
 import os.path as osp
 import random
 from glob import glob
@@ -34,7 +35,7 @@ def TemporalRandomCrop(total_frames, size):
 
 def resize(x, resolution):
     height, width = x.shape[-2:]
-    resolution = min(2 * resolution, height, width)
+    # resolution = min(2 * resolution, height, width)
     aspect_ratio = width / height
     if width <= height:
         new_width = resolution
@@ -61,12 +62,19 @@ class VideoDataset(data.Dataset):
 
         self.transform = transforms.Compose([
             ToTensorVideo(),
-            # Lambda(lambda x: resize(x, self.resolution)),
-            CenterCropVideo(self.resolution),
-            Lambda(lambda x: 2.0 * x - 1.0)
+            Lambda(lambda x: resize(x, self.resolution)),
+            # CenterCropVideo(self.resolution),
+            # Lambda(lambda x: 2.0 * x - 1.0)
         ])
         print('Building datasets...')
-        self.samples = self._make_dataset()
+        self.samples = self._make_mridataset()
+
+    def _make_mridataset(self):
+        # TODO: preprocess - cut for shot segments.
+        samples = []
+        samples += sum([glob(osp.join(self.video_folder, '**/2drt/video', f'*.{ext}'), recursive=True)
+                            for ext in self.video_exts], [])
+        return samples
 
     def _make_dataset(self):
         samples = []
@@ -105,3 +113,19 @@ class VideoDataset(data.Dataset):
         video_data = torch.from_numpy(video_data)
         video_data = video_data.permute(0, 3, 1, 2)  # (T, H, W, C) -> (T C H W)
         return video_data
+    
+class MRIRealVideoDataset(VideoDataset):
+    def __init__(self, video_folder, sequence_length, image_folder=None, train=True, resolution=64, sample_rate=1, dynamic_sample=True):
+        super().__init__(video_folder, sequence_length, image_folder=None, train=True, resolution=64, sample_rate=1, dynamic_sample=True)
+
+    def __getitem__(self, idx):
+        video_path = self.samples[idx]
+        video_name = os.path.basename(video_path)
+        try:
+            video = self.decord_read(video_path)
+            video = self.transform(video)  # T C H W -> T C H W
+            video = video.transpose(0, 1)  # T C H W -> C T H W
+            return dict(video=video, file_name=video_name)
+        except Exception as e:
+            print(f'Error with {e}, {video_path}')
+            return self.__getitem__(random.randint(0, self.__len__()-1))

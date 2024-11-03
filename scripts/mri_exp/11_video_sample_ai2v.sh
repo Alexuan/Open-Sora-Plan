@@ -1,0 +1,22 @@
+CUDA_VISIBLE_DEVICES=0 python opensora/sample/sample_ai2v.py \
+    --model_path LanguageBind/Open-Sora-Plan-v1.1.0 \
+    --text_encoder_name DeepFloyd/t5-v1_1-xxl \
+    --audio_encoder_name microsoft/speechlm \
+    --text_prompt examples/prompt_list_0.txt \
+    --ae CausalVAEModel_4x8x8 \
+    --version 121x80x80 \
+    --save_img_path "./sample_videos/121x80x80_speechlm_bs8_lr2e-5_1img_sr1_ckpt98000/" \
+    --fps 84 \
+    --guidance_scale 0.5 \
+    --num_sampling_steps 250 \
+    --enable_tiling \
+    --video_data "dataset_correct/scripts/video_mri_test.txt" \
+    --image_data "dataset_correct/scripts/img3dsnapshot_mri_test.txt" \
+    --audio_data "dataset_correct/scripts/audio_mri_test.txt" \
+    --sample_rate 1 \
+    --num_frames 121 \
+    --max_image_size 80 \
+    --dataset ai2v \
+    --cache_dir "./cache_dir" \
+    --cond_image_num 1 \
+    --encoder_hidden_states_extend \

@@ -327,6 +327,7 @@ class LatteT2V(ModelMixin, ConfigMixin):
             If `return_dict` is True, an [`~models.transformer_2d.Transformer2DModelOutput`] is returned, otherwise a
             `tuple` where the first element is the sample tensor.
         """
+        __import__('ipdb').set_trace()
         input_batch_size, c, frame, h, w = hidden_states.shape
         frame = frame - use_image_num  # 20-4=16
         hidden_states = rearrange(hidden_states, 'b c f h w -> (b f) c h w').contiguous()
@@ -414,6 +415,7 @@ class LatteT2V(ModelMixin, ConfigMixin):
         for i, (spatial_block, temp_block) in enumerate(zip(self.transformer_blocks, self.temporal_transformer_blocks)):
 
             if self.training and self.gradient_checkpointing:
+                __import__('ipdb').set_trace()
                 hidden_states = torch.utils.checkpoint.checkpoint(
                     spatial_block,
                     hidden_states,
@@ -440,6 +442,7 @@ class LatteT2V(ModelMixin, ConfigMixin):
                         if i == 0:
                             hidden_states_video = hidden_states_video + self.temp_pos_embed
 
+                        __import__('ipdb').set_trace()
                         hidden_states_video = torch.utils.checkpoint.checkpoint(
                             temp_block,
                             hidden_states_video,

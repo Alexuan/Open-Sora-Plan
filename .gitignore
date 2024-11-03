@@ -5,7 +5,7 @@ __pycache__
 *.pth
 UCF-101/
 results/
-vae
+vae/
 build/
 opensora.egg-info/
 wandb/
@@ -43,4 +43,11 @@ hw*
 513f*
 taming*
 221hw*
-65x512x512
+
+121x80x80*
+241x80x80*
+models_zoo/
+dataset_correct/
+t2v*
+debug/
+

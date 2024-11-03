@@ -1,0 +1,20 @@
+[
+  {
+    "path": "sub001_2drt_01_vcv1_r1_video.mp4",
+    "cap": [
+      "This is a mid-sagittal real-time MRI for vocal tract."
+    ]
+  },
+  {
+    "path": "sub001_2drt_17_topic1_video.mp4",
+    "cap": [
+      "This is a mid-sagittal real-time MRI for vocal tract."
+    ]
+  },
+  {
+    "path": "sub001_2drt_06_rainbow_r1_video.mp4",
+    "cap": [
+      "This is a mid-sagittal real-time MRI for vocal tract."
+    ]
+  }
+]

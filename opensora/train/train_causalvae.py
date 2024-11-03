@@ -3,12 +3,14 @@ import sys
 sys.path.append(".")
 import torch
 import random
+import imageio
+import cv2
 import numpy as np
 from opensora.models.ae.videobase import (
     CausalVAEModel,
 )
 from torch.utils.data import DataLoader
-from opensora.models.ae.videobase.dataset_videobase import VideoDataset
+from opensora.models.ae.videobase.dataset_videobase import VideoDataset, MRIRealVideoDataset
 import argparse
 from transformers import HfArgumentParser
 from dataclasses import dataclass, field, asdict
@@ -18,6 +20,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
+from opensora.models.ae import ae_stride_config, getae, getae_wrapper
 
 @dataclass
 class TrainingArguments:
@@ -30,6 +33,15 @@ class TrainingArguments:
     precision: str = field(
         default="bf16",
         metadata={"help": "The precision type used for training."},
+    )
+    cache_dir: str = field(
+        default="./cache_dir",
+        metadata={"help": "xxx."},
+    )
+    # NOTE (Xuan): end of adding vae model
+    load_from_huggingface: str = field(
+        default="LanguageBind/Open-Sora-Plan-v1.1.0",
+        metadata={"help": "xxx_debug."},
     )
     max_steps: int = field(
         default=100000,
@@ -109,6 +121,10 @@ def train(args):
     model = CausalVAEModel()
     if args.load_from_checkpoint is not None:
         model = CausalVAEModel.from_pretrained(args.load_from_checkpoint)
+    # NOTE (Xuan): load model from huggingface and finetuning from it
+    elif args.load_from_huggingface is not None:
+        kwargs = {'subfolder': 'vae', 'cache_dir': args.cache_dir}
+        model = CausalVAEModel.from_pretrained(args.load_from_huggingface, **kwargs)
     else:
         model = CausalVAEModel.from_config(args.model_config)
 
@@ -123,6 +139,16 @@ def train(args):
         sample_rate=args.sample_rate,
         dynamic_sample=args.dynamic_sample,
     )
+
+    """
+    rt_data = dataset.__getitem__(0)
+    rt_video = rt_data["video"].permute(1,2,3,0).numpy()
+    rt_video = cv2.normalize(rt_video, None, 255, 0, cv2.NORM_MINMAX, cv2.CV_8U)
+    imageio.mimwrite(
+        "test.mp4", rt_video,
+        fps=84, quality=9)  # highest quality is 10, lowest is 0
+    """
+
     train_loader = DataLoader(
         dataset,
         shuffle=True,
@@ -130,6 +156,7 @@ def train(args):
         batch_size=args.batch_size,
         pin_memory=True,
     )
+
     # Load Callbacks and Logger
     callbacks, logger = load_callbacks_and_logger(args)
     # Load Trainer
@@ -148,7 +175,9 @@ def train(args):
     if args.resume_from_checkpoint:
         trainer_kwargs["ckpt_path"] = args.resume_from_checkpoint
 
-    trainer.fit(model, train_loader, **trainer_kwargs)
+    trainer.fit(model, 
+                train_loader, 
+                **trainer_kwargs)
     # Save Huggingface Model
     model.save_pretrained(os.path.join(args.output_dir, "hf"))
 

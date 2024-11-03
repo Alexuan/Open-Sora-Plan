@@ -72,14 +72,18 @@ class T2V_dataset(Dataset):
         # input_ids = torch.ones(1, 120).to(torch.long).squeeze(0)
         # cond_mask = torch.cat([torch.ones(1, 60).to(torch.long), torch.ones(1, 60).to(torch.long)], dim=1).squeeze(0)
         
+        # TODO (Xuan): look into input_ids & cond_mask
+        # __import__('ipdb').set_trace()
         video_path = self.vid_cap_list[idx]['path']
-        frame_idx = self.vid_cap_list[idx]['frame_idx']
-        video = self.decord_read(video_path, frame_idx)
+        # NOTE (Xuan): temporaly comment out the frame_idx
+        # frame_idx = self.vid_cap_list[idx]['frame_idx']
+        # video = self.decord_read(video_path, frame_idx)
+        video = self.decord_read(video_path)
         video = self.transform(video)  # T C H W -> T C H W
         # video = torch.rand(65, 3, 512, 512)
 
         video = video.transpose(0, 1)  # T C H W -> C T H W
-        text = self.vid_cap_list[idx]['cap']
+        text = self.vid_cap_list[idx]['cap'][0] # debug: list -> str
 
         text = text_preprocessing(text)
         text_tokens_and_mask = self.tokenizer(

@@ -1,0 +1,15 @@
+python examples/rec_video_vae.py \
+    --batch_size 1 \
+    --real_video_dir /project/shrikann_35/xuanshi/DATA/SPAN/span_75speakers/sub001/2drt/video \
+    --generated_video_dir test_eval/span_gen/causalvae_sr1 \
+    --device cuda \
+    --sample_fps 84 \
+    --sample_rate 1 \
+    --num_frames 85 \
+    --resolution 80 \
+    --crop_size 80 \
+    --num_workers 8 \
+    --ckpt results/causalvae_sr5/model-epoch=42-step=100000.ckpt \
+    --model_config results/causalvae_sr1/hf/config.json \
+    --enable_tiling \
+    --output_origin

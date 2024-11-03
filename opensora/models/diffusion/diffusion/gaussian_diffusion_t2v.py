@@ -731,14 +731,15 @@ class GaussianDiffusion_T:
         """
         Compute training losses for a single timestep.
         :param model: the model to evaluate loss on.
-        :param x_start: the [N x C x ...] tensor of inputs.
-        :param t: a batch of timestep indices.
+        :param x_start: the [N x C x ...] tensor of inputs. eg: [2, 4, 9, 10, 10]
+        :param t: at batch of timestep indices. eg: [991,  19]
         :param model_kwargs: if not None, a dict of extra keyword arguments to
             pass to the model. This can be used for conditioning.
         :param noise: if specified, the specific Gaussian noise to try to remove.
         :return: a dict with the key "loss" containing a tensor of shape [N].
                  Some mean or variance settings may also have other keys.
         """
+        # __import__('ipdb').set_trace()
         if model_kwargs is None:
             model_kwargs = {}
             mask = 1.0

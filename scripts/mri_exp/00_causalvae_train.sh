@@ -1,0 +1,16 @@
+python opensora/train/train_causalvae.py \
+    --exp_name "causalvae_usc75spk" \
+    --batch_size 2 \
+    --precision bf16 \
+    --max_steps 160000 \
+    --save_steps 500 \
+    --output_dir results/causalvae \
+    --video_path /data2/SPAN_Datasets/span_75speakers \
+    --video_num_frames 85 \
+    --resolution 80 \
+    --sample_rate 1 \
+    --n_nodes 1 \
+    --devices 2 \
+    --num_workers 8 \
+    --model_config scripts/causalvae/release.json \
+    --resume_from_checkpoint results/causalvae/step=80000/model-epoch=67-step=80000.ckpt 

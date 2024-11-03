@@ -204,10 +204,10 @@ def main():
     
     dataset = VideoDataset(args.real_video_dir,
                            args.generated_video_dir,
-                            num_frames = args.num_frames,
-                            sample_rate = args.sample_rate,
-                            crop_size=args.crop_size,
-                            resolution=args.resolution) 
+                           num_frames = args.num_frames,
+                           sample_rate = args.sample_rate,
+                           crop_size=args.crop_size,
+                           resolution=args.resolution)
 
     if args.subset_size:
         indices = range(args.subset_size)

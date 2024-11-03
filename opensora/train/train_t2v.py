@@ -45,7 +45,7 @@ from opensora.models.ae.videobase import CausalVQVAEModelWrapper, CausalVAEModel
 from opensora.models.diffusion.diffusion import create_diffusion_T as create_diffusion
 from opensora.models.diffusion.latte.modeling_latte import LatteT2V
 from opensora.models.text_encoder import get_text_enc, get_text_warpper
-from opensora.utils.dataset_utils import Collate
+from opensora.utils.dataset_utils import Collate, CollateAI2V
 from opensora.models.ae import ae_stride_config, ae_channel_config
 from opensora.models.diffusion import Diffusion_models
 from opensora.sample.pipeline_videogen import VideoGenPipeline
@@ -166,12 +166,13 @@ def main(args):
     # Create model:
     diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
     kwargs = {}
-    ae = getae_wrapper(args.ae)(args.ae_path, cache_dir=args.cache_dir, **kwargs).eval()
+    ae = getae_wrapper(args.ae)(args.ae_path, subfolder="vae", cache_dir=args.cache_dir, **kwargs).eval()
     if args.enable_tiling:
         ae.vae.enable_tiling()
         ae.vae.tile_overlap_factor = args.tile_overlap_factor
         
-    kwargs = {'load_in_8bit': args.enable_8bit_t5, 'torch_dtype': weight_dtype, 'low_cpu_mem_usage': True}
+    # kwargs = {'load_in_8bit': args.enable_8bit_t5, 'torch_dtype': weight_dtype, 'low_cpu_mem_usage': True}
+    kwargs = {'load_in_8bit': args.enable_8bit_t5, 'torch_dtype': weight_dtype, 'low_cpu_mem_usage': False} # NOTE (Xuan): accelerator error
     text_enc = get_text_warpper(args.text_encoder_name)(args, **kwargs).eval()
 
     ae_stride_t, ae_stride_h, ae_stride_w = ae_stride_config[args.ae]
@@ -329,7 +330,7 @@ def main(args):
         shuffle=True,
         collate_fn=Collate(args),
         batch_size=args.train_batch_size,
-        num_workers=args.dataloader_num_workers,
+        num_workers=args.dataloader_num_workers, # should be 10
     )
 
     # Scheduler and math around the number of training steps.
@@ -415,6 +416,7 @@ def main(args):
     for epoch in range(first_epoch, args.num_train_epochs):
         train_loss = 0.0
         for step, (x, attn_mask, input_ids, cond_mask) in enumerate(train_dataloader):
+            __import__('ipdb').set_trace()
             with accelerator.accumulate(model):
                 # Sample noise that we'll add to the latents
                 if not args.multi_scale:
@@ -430,8 +432,8 @@ def main(args):
                 with torch.no_grad():
                     # use for loop to avoid OOM, because T5 is too huge...
                     B, _, _ = input_ids.shape  # B T+num_images L  b 1+4, L
+                    __import__('ipdb').set_trace()
                     cond = torch.stack([text_enc(input_ids[i], cond_mask[i]) for i in range(B)])  # B 1+num_images L D
-                    
                     # Map input images to latent space + normalize latents
                     if args.use_image_num == 0:
                         x = ae.encode(x)  # B C T H W
@@ -479,7 +481,6 @@ def main(args):
                         x = torch.cat([videos, images], dim=2)   #  b c 17+4, h, w
 
                 
-
                 # print('(x.shape, attn_mask.shape, cond.shape, cond_mask.shape', x.shape, attn_mask.shape, cond.shape, cond_mask.shape)
                 model_kwargs = dict(encoder_hidden_states=cond, attention_mask=attn_mask,
                                     encoder_attention_mask=cond_mask, use_image_num=args.use_image_num)
@@ -493,7 +494,6 @@ def main(args):
 
                 # Backpropagate
                 accelerator.backward(loss)
-
 
                 # accelerator.deepspeed_engine_wrapped.engine.backward(loss)
                 # print_grad_norm(model)
@@ -563,12 +563,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
     parser.add_argument("--video_data", type=str, required='')
-    parser.add_argument("--image_data", type=str, default='')
+    parser.add_argument("--image_data", type=str, required='')
+    parser.add_argument("--audio_data", type=str, required='')
     parser.add_argument("--sample_rate", type=int, default=1)
     parser.add_argument("--num_frames", type=int, default=17)
     parser.add_argument("--max_image_size", type=int, default=512)
     parser.add_argument("--use_img_from_vid", action="store_true")
     parser.add_argument("--use_image_num", type=int, default=0)
+    parser.add_argument("--cond_image_num", type=int, default=1)
     parser.add_argument("--model_max_length", type=int, default=300)
 
     parser.add_argument('--enable_8bit_t5', action='store_true')

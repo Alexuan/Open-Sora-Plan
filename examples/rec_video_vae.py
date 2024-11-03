@@ -16,6 +16,7 @@ import os
 
 sys.path.append(".")
 from opensora.models.ae.videobase import CausalVAEModel
+from opensora.models.ae.videobase.dataset_videobase import VideoDataset
 import torch.nn as nn
 
 
@@ -105,12 +106,13 @@ class RealVideoDataset(Dataset):
         total_frames = len(decord_vr)
         sample_frames_len = sample_rate * num_frames
 
+        s = 300 # NOTE(Xuan): hard code here to set frames selected from 300-th frame
         if total_frames > sample_frames_len:
-            s = 0
+            # s = 0
             e = s + sample_frames_len
             num_frames = num_frames
         else:
-            s = 0
+            # s = 0
             e = total_frames
             num_frames = int(total_frames / sample_frames_len * num_frames)
             print(
@@ -185,6 +187,23 @@ def _format_video_shape(video, time_compress=4, spatial_compress=8):
     return video[:, :new_time, :new_height, :new_width]
 
 
+class MRIRealVideoDataset(VideoDataset):
+    def __init__(self, video_folder, sequence_length, image_folder=None, train=True, resolution=64, sample_rate=1, dynamic_sample=True):
+        super().__init__(video_folder, sequence_length, image_folder=None, train=True, resolution=64, sample_rate=1, dynamic_sample=True)
+
+    def __getitem__(self, idx):
+        video_path = self.samples[idx]
+        video_name = os.path.basename(video_path)
+        try:
+            video = self.decord_read(video_path)
+            video = self.transform(video)  # T C H W -> T C H W
+            video = video.transpose(0, 1)  # T C H W -> C T H W
+            return dict(video=video, file_name=video_name)
+        except Exception as e:
+            print(f'Error with {e}, {video_path}')
+            return self.__getitem__(random.randint(0, self.__len__()-1))
+
+
 @torch.no_grad()
 def main(args: argparse.Namespace):
     real_video_dir = args.real_video_dir
@@ -208,7 +227,9 @@ def main(args: argparse.Namespace):
     
     # ---- Load Model ----
     device = args.device
-    vqvae = CausalVAEModel.from_pretrained(args.ckpt)
+    # vqvae = CausalVAEModel.from_pretrained(args.ckpt)
+    vqvae = CausalVAEModel.from_config(args.model_config)
+    vqvae.init_from_ckpt(args.ckpt)
     vqvae = vqvae.to(device).to(data_type)
     if args.enable_tiling:
         vqvae.enable_tiling()
@@ -223,6 +244,15 @@ def main(args: argparse.Namespace):
         crop_size=crop_size,
         resolution=resolution,
     )
+    """    
+    dataset = MRIRealVideoDataset(
+        real_video_dir,
+        sequence_length=num_frames,
+        resolution=resolution,
+        sample_rate=sample_rate
+    )
+    """
+    # dataset.__getitem__(0)
     
     if subset_size:
         indices = range(subset_size)
@@ -240,15 +270,17 @@ def main(args: argparse.Namespace):
         latents = vqvae.encode(x).sample().to(data_type)
         video_recon = vqvae.decode(latents)
         for idx, video in enumerate(video_recon):
-            output_path = os.path.join(generated_video_dir, file_names[idx])
+            __import__('ipdb').set_trace()
             if args.output_origin:
-                os.makedirs(os.path.join(generated_video_dir, "origin/"), exist_ok=True)
-                origin_output_path = os.path.join(generated_video_dir, "origin/", file_names[idx])
+                os.makedirs(os.path.join(generated_video_dir, "ground_truth"), exist_ok=True)
+                origin_output_path = os.path.join(generated_video_dir, "ground_truth", file_names[idx])
                 custom_to_video(
-                    x[idx], fps=sample_fps / sample_rate, output_file=origin_output_path
+                    x[idx].to(torch.float32), fps=sample_fps / sample_rate, output_file=origin_output_path
                 )
+            output_path = os.path.join(generated_video_dir, "generated", file_names[idx])
+            os.makedirs(os.path.join(generated_video_dir, "generated"), exist_ok=True)
             custom_to_video(
-                video, fps=sample_fps / sample_rate, output_file=output_path
+                video.to(torch.float32), fps=sample_fps / sample_rate, output_file=output_path
             )
     # ---- Inference ----
 
@@ -257,6 +289,7 @@ if __name__ == "__main__":
     parser.add_argument("--real_video_dir", type=str, default="")
     parser.add_argument("--generated_video_dir", type=str, default="")
     parser.add_argument("--ckpt", type=str, default="")
+    parser.add_argument("--model_config", type=str, default="")
     parser.add_argument("--sample_fps", type=int, default=30)
     parser.add_argument("--resolution", type=int, default=336)
     parser.add_argument("--crop_size", type=int, default=None)

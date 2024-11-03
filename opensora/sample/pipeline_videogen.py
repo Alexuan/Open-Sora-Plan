@@ -162,6 +162,7 @@ class VideoGenPipeline(DiffusionPipeline):
             mask_feature: (bool, defaults to `True`):
                 If `True`, the function will mask the text embeddings.
         """
+        __import__('ipdb').set_trace()
         embeds_initially_provided = prompt_embeds is not None and negative_prompt_embeds is not None
 
         if device is None:
@@ -217,6 +218,7 @@ class VideoGenPipeline(DiffusionPipeline):
 
         prompt_embeds = prompt_embeds.to(dtype=dtype, device=device)
 
+        __import__('ipdb').set_trace()
         bs_embed, seq_len, _ = prompt_embeds.shape
         # duplicate text embeddings and attention mask for each generation per prompt, using mps friendly method
         prompt_embeds = prompt_embeds.repeat(1, num_images_per_prompt, 1)
@@ -224,6 +226,7 @@ class VideoGenPipeline(DiffusionPipeline):
         prompt_embeds_attention_mask = prompt_embeds_attention_mask.view(bs_embed, -1)
         prompt_embeds_attention_mask = prompt_embeds_attention_mask.repeat(num_images_per_prompt, 1)
 
+        __import__('ipdb').set_trace()
         # get unconditional embeddings for classifier free guidance
         if do_classifier_free_guidance and negative_prompt_embeds is None:
             uncond_tokens = [negative_prompt] * batch_size
@@ -615,6 +618,7 @@ class VideoGenPipeline(DiffusionPipeline):
                 If `return_dict` is `True`, [`~pipelines.ImagePipelineOutput`] is returned, otherwise a `tuple` is
                 returned where the first element is a list with the generated images
         """
+        __import__('ipdb').set_trace()
         # 1. Check inputs. Raise error if not correct
         # height = height or self.transformer.config.sample_size * self.vae_scale_factor
         # width = width or self.transformer.config.sample_size * self.vae_scale_factor
@@ -637,6 +641,7 @@ class VideoGenPipeline(DiffusionPipeline):
         # corresponds to doing no classifier free guidance.
         do_classifier_free_guidance = guidance_scale > 1.0
 
+        # __import__('ipdb').set_trace()
         # 3. Encode input prompt
         prompt_embeds, negative_prompt_embeds = self.encode_prompt(
             prompt,

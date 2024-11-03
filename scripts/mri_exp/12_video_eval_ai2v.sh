@@ -1,0 +1,12 @@
+python opensora/eval/eval_common_metric_ai2v.py \
+    --batch_size 2 \
+    --real_video_dir sample_videos/121x80x80_speechlm_bs8_lr2e-5_1img_samemodality_sr1_ckpt60000/groundtruth \
+    --generated_video_dir sample_videos/121x80x80_speechlm_bs8_lr2e-5_1img_samemodality_sr1_ckpt60000/pred \
+    --device cuda \
+    --sample_fps 84 \
+    --crop_size 80 \
+    --resolution 80 \
+    --num_frames 121 \
+    --sample_rate 1 \
+    --subset_size 100 \
+    --metric fvd

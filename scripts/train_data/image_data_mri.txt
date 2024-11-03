@@ -1,0 +1,2 @@
+/project/shrikann_35/xuanshi/DATA/SPAN/span_75speakers/sub001/3d/snapshot,/scratch1/xuanshi/REPO/Open-Sora-Plan/data/span_75speakers_sub001_image.json
+/project/shrikann_35/xuanshi/DATA/SPAN/span_75speakers/sub002/3d/snapshot,/scratch1/xuanshi/REPO/Open-Sora-Plan/data/span_75speakers_sub002_image.json
